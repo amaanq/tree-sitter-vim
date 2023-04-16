@@ -40,11 +40,15 @@ module.exports = grammar({
     $.keycode_separator,
     // $.keycode,
     $.end_keycode,
+    $.format_blob,
+    $.format_space,
+    $.token,
     // $.heredoc_language,
     $.heredoc_start,
     $.heredoc_content,
     $.oneliner_heredoc_content,
     $.heredoc_end,
+    // $.comment,
   ],
 
   extras: $ => [
@@ -94,14 +98,17 @@ module.exports = grammar({
       $.throw_statement,
       $.command_statement,
       $.repeated_command,
+      $.dollar_command,
       $.sign_statement,
       $.mark_statement,
       $.normal_statement,
+      $.silent_statement,
       $.finish,
-      // $.eval_statement,
+      $.eval_statement,
       $.builtin_command_statement,
       $.command,
       $.substitution_command,
+      $.errorformat_statement,
       // $.unknown_builtin_statement,
     ),
 
@@ -115,13 +122,13 @@ module.exports = grammar({
       // $.return_statement,
       $.map_statement,
       $.unknown_builtin_command,
-      $.silent_statement,
       $.autocmd_statement,
       $.augroup_statement,
       $.heredoc_statement,
       $.expression_statement,
       $.regex_pattern_statement,
       $.filter_command,
+      $.loadkeymap_command,
     ),
 
     // Statements for the repetition in keymaps and autocmds
@@ -132,7 +139,7 @@ module.exports = grammar({
       // $.builtin_command_statement,
       // $.call_statement,
       alias($._execute_statement, $.execute_statement),
-      $.eval_statement,
+      // $.eval_statement,
     ),
 
     _block: $ => repeat1(choice(
@@ -148,7 +155,7 @@ module.exports = grammar({
       '(', optional($.arguments), ')',
       repeat(choice('dict', 'range', 'abort', 'closure')),
       optional($._block),
-      /endf(u(n(c(tion)?)?)?)?|enddef/,
+      alias(/endf(u(n(c(tion)?)?)?)?|enddef/, 'endfunction'),
       token.immediate(optional('!')),
       optional($._identifier),
       $._separator,
@@ -177,6 +184,7 @@ module.exports = grammar({
         $.substitution_command,
         $.heredoc_statement,
         alias($._unknown_builtin_command, $.unknown_builtin_command),
+        $.comment,
         '!',
       ),
     ),
@@ -187,7 +195,9 @@ module.exports = grammar({
       token(prec(-1, seq(/[a-zA-Z]?[$|^|%']/, /[\[\]',a-zA-Z0-9_]*/))),
       // phpcomplete.vim L2097 silent! 0put =cfile
       // seq(/\d+\w/, '=', $.expression),
-      token(seq(/\d+\w+/, /[^.]*/, /./)),
+      // token(seq(/\d+\w+/, /[^.]*/, /./)),
+      /\d+\w+/,
+      '-',
     ),
 
     builtin_command_statement: $ => seq($.builtin_command, $.statement),
@@ -209,6 +219,21 @@ module.exports = grammar({
       $._separator,
     ),
 
+    loadkeymap_command: $ => prec.right(seq(
+      'loadkeymap',
+      $._separator,
+      repeat1($.keymap),
+    )),
+
+    keymap: $ => seq(
+      field('left', choice($.token, $.keycode)),
+      field('right', choice($.token, $.keycode)),
+      optional(alias(/[^\s"][^\n]+/, $.annotation)),
+      $._separator,
+    ),
+
+    // token: _ => /\S+/,
+
     // TODO(anyone reading this): toss this in the external scanner to have stateful tracking
     // of what the delimiter is, currently it just assumes it'll be /
     substitution_command: _ => token(seq(
@@ -221,6 +246,8 @@ module.exports = grammar({
       '/',
       optional(choice('g', 'c', 'e', 'p', 'r', 'i', 'I', 'C', 'E', 'P', 'R')),
     )),
+
+    dollar_command: _ => /\$[^\r\n]+/,
 
     repeated_command: $ => seq($.number, token.immediate(/[a-zA-Z0-9_]+/)),
 
@@ -736,13 +763,15 @@ module.exports = grammar({
       field('option', $.set_option),
       optional(seq(
         field('operator', token.immediate(choice('=', ':', '+=', '^=', '-=', '<'))),
-        field('right', commaSep(choice(
+        commaSep(choice(
           $._identifier,
           $.number,
-          $.filename,
+          $.format_string,
+          $.format_space,
+          // $.filename,
           // token(prec(1, /%[^\r\n]+/)), // % command
-          token(/[^\r\n]+/), // catch-all
-        ))),
+          alias(token(prec(-1, /[^\r\n,]+/)), $.garbage), // catch-all
+        )),
       )),
     )),
 
@@ -756,6 +785,15 @@ module.exports = grammar({
       $.default_option,
     ),
 
+    errorformat_statement: $ => seq(
+      'errorformat',
+      field('operator', token.immediate(choice('=', '+='))),
+      commaSep(choice(
+        $.format_string,
+        $.format_space,
+      )),
+    ),
+
     normal_statement: $ => seq(
       /norm(al)?/,
       token.immediate(optional('!')),
@@ -767,10 +805,24 @@ module.exports = grammar({
       token.immediate(optional('!')),
       // $.statement,
       choice(
-        seq($._no_nl_statement, $._separator),
-        $._nl_statement,
+        // seq($._no_nl_statement, $._separator),
+        $._no_nl_statement,
+        $._unknown_builtin_command,
       ),
       // $._separator,
+    ),
+
+    augroup_statement: $ => seq(
+      'augroup',
+      token.immediate(optional('!')),
+      // $.identifier,
+      alias(/[^\r\n]+/, $.identifier),
+      optional(seq(
+        repeat1($.autocmd_statement),
+      )),
+      'augroup',
+      'END',
+      $._separator,
     ),
 
     autocmd_statement: $ => seq(
@@ -834,19 +886,6 @@ module.exports = grammar({
       /Vim([A-Z][a-z]+)+/,
       /Win([A-Z][a-z]+)+/,
     )),
-
-    augroup_statement: $ => seq(
-      'augroup',
-      token.immediate(optional('!')),
-      // $.identifier,
-      alias(/[^\r\n]+/, $.identifier),
-      optional(seq(
-        repeat1($.autocmd_statement),
-        'augroup',
-        'END',
-      )),
-      $._separator,
-    ),
 
     heredoc_statement: $ => seq(
       // $.heredoc_language,
@@ -915,7 +954,7 @@ module.exports = grammar({
     ),
 
     _unknown_builtin_command: $ => prec.right(seq(
-      choice($.identifier),
+      $.identifier,
       token.immediate(optional('!')),
       choice(repeat($.command_argument), $.if_statement),
     )),
@@ -924,6 +963,9 @@ module.exports = grammar({
     //   $.identifier,
     //   choice($.if_statement),
     // )),
+
+    // format_string: _ => choice(token(/%[^\n,]+/), '\\'),
+    format_string: $ => prec.right(repeat1(choice($.format_blob))),
 
     string: $ => choice($._string, $._literal_string),
 
@@ -965,7 +1007,16 @@ module.exports = grammar({
       ),
     )),
 
-    command_argument: $ => choice($.string, alias(/"[^\r\n]+/, $.comment), /[^\s]+/),
+    command_argument: $ => prec.right(choice(
+      $.string,
+      alias(/"[^\r\n]+/, $.comment),
+      /[^%\s][^\s]+/,
+      // $.format_string,
+      // $.format_space,
+      $._identifier,
+      $.option,
+      // seq(commaSep1($.format_string), optional(',')),
+    )),
 
     number: _ => /\d+/,
 
@@ -983,7 +1034,7 @@ module.exports = grammar({
 
     identifier: _ => /[a-zA-Z_][a-zA-Z0-9_]*/,
 
-    unique_identifier: $ => prec.right(seq(/<[sS][iI][dD]>/, choice($._identifier, $.key))),
+    unique_identifier: $ => prec.right(seq(/<[sS][iI][dD]>/, choice($._identifier, $.key, ':'))),
 
     keyword_identifier: $ => alias(
       prec(-3, choice(
@@ -1053,8 +1104,10 @@ module.exports = grammar({
     // TODO: EXTERNAL SCANNER
     _bare_key: $ => alias(
       choice(
-        token(/[a-zA-Z0-9\[\]\{\}\-\$%*^+`'"/?_,\x01\x08][a-zA-Z0-9\[\]\{\}\-%\$/*^+`'"/?_,\x1b]*/),
-        token(prec(-1, /[a-zA-Z0-9\[\]\{\}\-%\$*^+`'"/?_,=\x01\x08][a-zA-Z0-9\[\]\{\}\-%\$/*^+`'"/?_,=<>\x1b]*/)),
+        token(/[a-zA-Z0-9\[\]\{\}\-\$%*^+`'/?_,\x01\x08][a-zA-Z0-9\[\]\{\}\-%\$/*^+`'"/?_,\x1b]*/),
+        token(/[a-zA-Z0-9\[\]\{\}\-\$%*^+`'"/?_,\x01\x08][a-zA-Z0-9\[\]\{\}\-%\$/*^+`'"/?_,\x1b]+/),
+        token(prec(-1, /[a-zA-Z0-9\[\]\{\}\-%\$*^+`'/?_,=\x01\x08][a-zA-Z0-9\[\]\{\}\-%\$/*^+`'"/?_,=<>\x1b]*/)),
+        token(prec(-1, /[a-zA-Z0-9\[\]\{\}\-%\$*^+`'"/?_,=\x01\x08][a-zA-Z0-9\[\]\{\}\-%\$/*^+`'"/?_,=<>\x1b]+/)),
       ),
       $.bare_key,
     ),
@@ -1073,7 +1126,7 @@ module.exports = grammar({
       // First character of a filename is not immediate
       choice(
         /[A-Za-z0-9]/,
-        /[/._+,#$%~=-]/,
+        /[/._+#$~=-]/,
         // Include windows characters
         /[\\{}\[\]:@!]/,
         // Allow wildcard

@@ -24,10 +24,10 @@ enum TokenType {
 
 typedef struct {
     char *HEREDOC_LANGUAGE;
-    int HEREDOC_LANGUAGE_LENGTH;
+    int   HEREDOC_LANGUAGE_LENGTH;
     char *HEREDOC_START;
-    int HEREDOC_START_LENGTH;
-    char SUBSTITUTION_DELIMITER;
+    int   HEREDOC_START_LENGTH;
+    char  SUBSTITUTION_DELIMITER;
 } Scanner;
 
 static void advance(TSLexer *lexer) { lexer->advance(lexer, false); }
@@ -61,9 +61,9 @@ unsigned tree_sitter_vim_external_scanner_serialize(void *payload,
     return len;
 }
 
-void tree_sitter_vim_external_scanner_deserialize(void *payload,
+void tree_sitter_vim_external_scanner_deserialize(void       *payload,
                                                   const char *buffer,
-                                                  unsigned length) {
+                                                  unsigned    length) {
     if (length > 0) {
         assert(sizeof(Scanner) == length);
         memcpy(payload, buffer, sizeof(Scanner));
@@ -257,8 +257,12 @@ bool scan_heredoc_content(Scanner *scanner, TSLexer *lexer) {
 
 bool tree_sitter_vim_external_scanner_scan(void *payload, TSLexer *lexer,
                                            const bool *valid_symbols) {
-
     Scanner *scanner = (Scanner *)payload;
+
+    /* if (lexer->lookahead == ':' && lexer->get_column(lexer) == 0) { */
+    /*     lexer->result_symbol = COLON; */
+    /*     advance(lexer); */
+    /* } */
 
     if (valid_symbols[SEPARATOR] && valid_symbols[LINE_CONTINUATION]) {
         while (iswspace(lexer->lookahead) && lexer->lookahead != '\n')
@@ -303,22 +307,30 @@ bool tree_sitter_vim_external_scanner_scan(void *payload, TSLexer *lexer,
         }
     }
 
-	if (valid_symbols[TOKEN]) {
+    if (valid_symbols[TOKEN]) {
         // anything but ws
-        while (iswspace(lexer->lookahead) && lexer->lookahead != '\n')
+        while (iswspace(lexer->lookahead))
             skip(lexer);
 
         if (lexer->lookahead == '\0')
             return false;
 
+        if (lexer->lookahead == '"') {
+            lexer->result_symbol = TOKEN;
+            advance(lexer);
+            if (iswspace(lexer->lookahead)) {
+                return false;
+            }
+        }
+
         if (lexer->lookahead != '\0' && !iswspace(lexer->lookahead)) {
             lexer->result_symbol = TOKEN;
             while (lexer->lookahead != '\0' && !iswspace(lexer->lookahead)) {
-				printf("lookahead: %c\n", lexer->lookahead);
                 advance(lexer);
             }
             return true;
         }
+        return false;
     }
 
     if (valid_symbols[KEYCODE_CONTENT])

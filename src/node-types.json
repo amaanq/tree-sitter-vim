@@ -8,10 +8,6 @@
         "named": true
       },
       {
-        "type": "eval_statement",
-        "named": true
-      },
-      {
         "type": "execute_statement",
         "named": true
       },
@@ -164,11 +160,23 @@
         "named": true
       },
       {
+        "type": "dollar_command",
+        "named": true
+      },
+      {
         "type": "echo_statement",
         "named": true
       },
       {
         "type": "echohl_statement",
+        "named": true
+      },
+      {
+        "type": "errorformat_statement",
+        "named": true
+      },
+      {
+        "type": "eval_statement",
         "named": true
       },
       {
@@ -205,6 +213,10 @@
       },
       {
         "type": "let_statement",
+        "named": true
+      },
+      {
+        "type": "loadkeymap_command",
         "named": true
       },
       {
@@ -371,11 +383,23 @@
             "named": true
           },
           {
+            "type": "dollar_command",
+            "named": true
+          },
+          {
             "type": "echohl_statement",
             "named": true
           },
           {
             "type": "embedded_statement",
+            "named": true
+          },
+          {
+            "type": "errorformat_statement",
+            "named": true
+          },
+          {
+            "type": "eval_statement",
             "named": true
           },
           {
@@ -408,6 +432,10 @@
           },
           {
             "type": "sign_statement",
+            "named": true
+          },
+          {
+            "type": "silent_statement",
             "named": true
           },
           {
@@ -658,11 +686,23 @@
           "named": true
         },
         {
+          "type": "dollar_command",
+          "named": true
+        },
+        {
           "type": "echo_statement",
           "named": true
         },
         {
           "type": "echohl_statement",
+          "named": true
+        },
+        {
+          "type": "errorformat_statement",
+          "named": true
+        },
+        {
+          "type": "eval_statement",
           "named": true
         },
         {
@@ -699,6 +739,10 @@
         },
         {
           "type": "let_statement",
+          "named": true
+        },
+        {
+          "type": "loadkeymap_command",
           "named": true
         },
         {
@@ -785,6 +829,10 @@
           "named": true
         },
         {
+          "type": "comment",
+          "named": true
+        },
+        {
           "type": "end_keycode",
           "named": true
         },
@@ -840,11 +888,39 @@
       "required": false,
       "types": [
         {
+          "type": "argument",
+          "named": true
+        },
+        {
           "type": "comment",
           "named": true
         },
         {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "indirect_reference_identifier",
+          "named": true
+        },
+        {
+          "type": "namespace_identifier",
+          "named": true
+        },
+        {
+          "type": "option",
+          "named": true
+        },
+        {
+          "type": "scoped_identifier",
+          "named": true
+        },
+        {
           "type": "string",
+          "named": true
+        },
+        {
+          "type": "unique_identifier",
           "named": true
         }
       ]
@@ -1039,11 +1115,23 @@
           "named": true
         },
         {
+          "type": "dollar_command",
+          "named": true
+        },
+        {
           "type": "echo_statement",
           "named": true
         },
         {
           "type": "echohl_statement",
+          "named": true
+        },
+        {
+          "type": "errorformat_statement",
+          "named": true
+        },
+        {
+          "type": "eval_statement",
           "named": true
         },
         {
@@ -1080,6 +1168,10 @@
         },
         {
           "type": "let_statement",
+          "named": true
+        },
+        {
+          "type": "loadkeymap_command",
           "named": true
         },
         {
@@ -1182,11 +1274,23 @@
           "named": true
         },
         {
+          "type": "dollar_command",
+          "named": true
+        },
+        {
           "type": "echo_statement",
           "named": true
         },
         {
           "type": "echohl_statement",
+          "named": true
+        },
+        {
+          "type": "errorformat_statement",
+          "named": true
+        },
+        {
+          "type": "eval_statement",
           "named": true
         },
         {
@@ -1227,6 +1331,10 @@
         },
         {
           "type": "let_statement",
+          "named": true
+        },
+        {
+          "type": "loadkeymap_command",
           "named": true
         },
         {
@@ -1287,6 +1395,25 @@
         },
         {
           "type": "while_statement",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "errorformat_statement",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "format_space",
+          "named": true
+        },
+        {
+          "type": "format_string",
           "named": true
         }
       ]
@@ -1471,11 +1598,23 @@
           "named": true
         },
         {
+          "type": "dollar_command",
+          "named": true
+        },
+        {
           "type": "echo_statement",
           "named": true
         },
         {
           "type": "echohl_statement",
+          "named": true
+        },
+        {
+          "type": "errorformat_statement",
+          "named": true
+        },
+        {
+          "type": "eval_statement",
           "named": true
         },
         {
@@ -1512,6 +1651,10 @@
         },
         {
           "type": "let_statement",
+          "named": true
+        },
+        {
+          "type": "loadkeymap_command",
           "named": true
         },
         {
@@ -1664,11 +1807,23 @@
           "named": true
         },
         {
+          "type": "dollar_command",
+          "named": true
+        },
+        {
           "type": "echo_statement",
           "named": true
         },
         {
           "type": "echohl_statement",
+          "named": true
+        },
+        {
+          "type": "errorformat_statement",
+          "named": true
+        },
+        {
+          "type": "eval_statement",
           "named": true
         },
         {
@@ -1705,6 +1860,10 @@
         },
         {
           "type": "let_statement",
+          "named": true
+        },
+        {
+          "type": "loadkeymap_command",
           "named": true
         },
         {
@@ -1771,6 +1930,21 @@
     }
   },
   {
+    "type": "format_string",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "format_blob",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "function_definition",
     "named": true,
     "fields": {},
@@ -1815,11 +1989,23 @@
           "named": true
         },
         {
+          "type": "dollar_command",
+          "named": true
+        },
+        {
           "type": "echo_statement",
           "named": true
         },
         {
           "type": "echohl_statement",
+          "named": true
+        },
+        {
+          "type": "errorformat_statement",
+          "named": true
+        },
+        {
+          "type": "eval_statement",
           "named": true
         },
         {
@@ -1868,6 +2054,10 @@
         },
         {
           "type": "let_statement",
+          "named": true
+        },
+        {
+          "type": "loadkeymap_command",
           "named": true
         },
         {
@@ -2005,6 +2195,10 @@
           "named": true
         },
         {
+          "type": "dollar_command",
+          "named": true
+        },
+        {
           "type": "echo_statement",
           "named": true
         },
@@ -2018,6 +2212,14 @@
         },
         {
           "type": "elseif_statement",
+          "named": true
+        },
+        {
+          "type": "errorformat_statement",
+          "named": true
+        },
+        {
+          "type": "eval_statement",
           "named": true
         },
         {
@@ -2058,6 +2260,10 @@
         },
         {
           "type": "let_statement",
+          "named": true
+        },
+        {
+          "type": "loadkeymap_command",
           "named": true
         },
         {
@@ -2177,6 +2383,50 @@
     }
   },
   {
+    "type": "keymap",
+    "named": true,
+    "fields": {
+      "left": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "keycode",
+            "named": true
+          },
+          {
+            "type": "token",
+            "named": true
+          }
+        ]
+      },
+      "right": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "keycode",
+            "named": true
+          },
+          {
+            "type": "token",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "annotation",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "lambda_expression",
     "named": true,
     "fields": {},
@@ -2267,6 +2517,21 @@
     }
   },
   {
+    "type": "loadkeymap_command",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "keymap",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "map_definition",
     "named": true,
     "fields": {
@@ -2321,11 +2586,23 @@
             "named": true
           },
           {
+            "type": "dollar_command",
+            "named": true
+          },
+          {
             "type": "echohl_statement",
             "named": true
           },
           {
             "type": "embedded_statement",
+            "named": true
+          },
+          {
+            "type": "errorformat_statement",
+            "named": true
+          },
+          {
+            "type": "eval_statement",
             "named": true
           },
           {
@@ -2374,6 +2651,10 @@
           },
           {
             "type": "sign_statement",
+            "named": true
+          },
+          {
+            "type": "silent_statement",
             "named": true
           },
           {
@@ -2765,49 +3046,53 @@
             "named": true
           }
         ]
-      },
-      "right": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": ",",
-            "named": false
-          },
-          {
-            "type": "argument",
-            "named": true
-          },
-          {
-            "type": "filename",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "indirect_reference_identifier",
-            "named": true
-          },
-          {
-            "type": "namespace_identifier",
-            "named": true
-          },
-          {
-            "type": "number",
-            "named": true
-          },
-          {
-            "type": "scoped_identifier",
-            "named": true
-          },
-          {
-            "type": "unique_identifier",
-            "named": true
-          }
-        ]
       }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "argument",
+          "named": true
+        },
+        {
+          "type": "format_space",
+          "named": true
+        },
+        {
+          "type": "format_string",
+          "named": true
+        },
+        {
+          "type": "garbage",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "indirect_reference_identifier",
+          "named": true
+        },
+        {
+          "type": "namespace_identifier",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "scoped_identifier",
+          "named": true
+        },
+        {
+          "type": "unique_identifier",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -2875,17 +3160,9 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
-        {
-          "type": "augroup_statement",
-          "named": true
-        },
-        {
-          "type": "autocmd_statement",
-          "named": true
-        },
         {
           "type": "break",
           "named": true
@@ -2903,11 +3180,15 @@
           "named": true
         },
         {
+          "type": "command_argument",
+          "named": true
+        },
+        {
           "type": "command_statement",
           "named": true
         },
         {
-          "type": "echo_statement",
+          "type": "dollar_command",
           "named": true
         },
         {
@@ -2915,15 +3196,11 @@
           "named": true
         },
         {
-          "type": "execute_statement",
+          "type": "errorformat_statement",
           "named": true
         },
         {
-          "type": "expression_statement",
-          "named": true
-        },
-        {
-          "type": "filter_command",
+          "type": "eval_statement",
           "named": true
         },
         {
@@ -2935,23 +3212,11 @@
           "named": true
         },
         {
-          "type": "function_definition",
-          "named": true
-        },
-        {
-          "type": "heredoc_statement",
+          "type": "identifier",
           "named": true
         },
         {
           "type": "if_statement",
-          "named": true
-        },
-        {
-          "type": "let_statement",
-          "named": true
-        },
-        {
-          "type": "map_statement",
           "named": true
         },
         {
@@ -2960,10 +3225,6 @@
         },
         {
           "type": "normal_statement",
-          "named": true
-        },
-        {
-          "type": "regex_pattern_statement",
           "named": true
         },
         {
@@ -2992,14 +3253,6 @@
         },
         {
           "type": "try_statement",
-          "named": true
-        },
-        {
-          "type": "unknown_builtin_command",
-          "named": true
-        },
-        {
-          "type": "unlet_statement",
           "named": true
         },
         {
@@ -3104,11 +3357,23 @@
           "named": true
         },
         {
+          "type": "dollar_command",
+          "named": true
+        },
+        {
           "type": "echo_statement",
           "named": true
         },
         {
           "type": "echohl_statement",
+          "named": true
+        },
+        {
+          "type": "errorformat_statement",
+          "named": true
+        },
+        {
+          "type": "eval_statement",
           "named": true
         },
         {
@@ -3149,6 +3414,10 @@
         },
         {
           "type": "let_statement",
+          "named": true
+        },
+        {
+          "type": "loadkeymap_command",
           "named": true
         },
         {
@@ -3254,7 +3523,7 @@
     "fields": {},
     "children": {
       "multiple": false,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "argument",
@@ -3366,11 +3635,23 @@
           "named": true
         },
         {
+          "type": "dollar_command",
+          "named": true
+        },
+        {
           "type": "echo_statement",
           "named": true
         },
         {
           "type": "echohl_statement",
+          "named": true
+        },
+        {
+          "type": "errorformat_statement",
+          "named": true
+        },
+        {
+          "type": "eval_statement",
           "named": true
         },
         {
@@ -3411,6 +3692,10 @@
         },
         {
           "type": "let_statement",
+          "named": true
+        },
+        {
+          "type": "loadkeymap_command",
           "named": true
         },
         {
@@ -3765,6 +4050,10 @@
     "named": false
   },
   {
+    "type": "annotation",
+    "named": true
+  },
+  {
     "type": "arglist",
     "named": false
   },
@@ -3877,6 +4166,10 @@
     "named": false
   },
   {
+    "type": "dollar_command",
+    "named": true
+  },
+  {
     "type": "echo",
     "named": false
   },
@@ -3917,6 +4210,10 @@
     "named": false
   },
   {
+    "type": "endfunction",
+    "named": false
+  },
+  {
     "type": "endtry",
     "named": false
   },
@@ -3926,6 +4223,10 @@
   },
   {
     "type": "environment",
+    "named": false
+  },
+  {
+    "type": "errorformat",
     "named": false
   },
   {
@@ -3977,8 +4278,20 @@
     "named": false
   },
   {
+    "type": "format_blob",
+    "named": true
+  },
+  {
+    "type": "format_space",
+    "named": true
+  },
+  {
     "type": "function",
     "named": false
+  },
+  {
+    "type": "garbage",
+    "named": true
   },
   {
     "type": "help",
@@ -4070,6 +4383,10 @@
   },
   {
     "type": "loaded_buffers",
+    "named": false
+  },
+  {
+    "type": "loadkeymap",
     "named": false
   },
   {
@@ -4279,6 +4596,10 @@
   {
     "type": "tnoremap",
     "named": false
+  },
+  {
+    "type": "token",
+    "named": true
   },
   {
     "type": "try",
