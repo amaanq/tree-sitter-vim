@@ -36,6 +36,7 @@ module.exports = grammar({
   externals: $ => [
     $._line_continuation,
     $._separator,
+    $._newline,
     $.keycode_content,
     $.keycode_separator,
     // $.keycode,
@@ -43,6 +44,8 @@ module.exports = grammar({
     $.format_blob,
     $.format_space,
     $.token,
+    $.p_separator_first,
+    $.p_separator,
     // $.heredoc_language,
     $.heredoc_start,
     $.heredoc_content,
@@ -79,6 +82,7 @@ module.exports = grammar({
       $._no_nl_statement,
       $._nl_statement,
       $.set_statement,
+      $.range_statement,
     ),
 
     // Statements that don't necesitate a separator, and will add them in blocks
@@ -105,11 +109,11 @@ module.exports = grammar({
       $.silent_statement,
       $.finish,
       $.eval_statement,
-      $.builtin_command_statement,
       $.command,
       $.substitution_command,
-      $.errorformat_statement,
-      // $.unknown_builtin_statement,
+      $.format_statement,
+      $.put_statement,
+      $.keeppatterns_command,
     ),
 
     // Statements that embed the separator in them
@@ -118,16 +122,19 @@ module.exports = grammar({
       $.let_statement,
       $.echo_statement,
       $.execute_statement,
+      $.keepj_statement,
+      $.highlight_statement,
       $.unlet_statement,
-      // $.return_statement,
       $.map_statement,
       $.unknown_builtin_command,
       $.autocmd_statement,
       $.augroup_statement,
       $.heredoc_statement,
       $.expression_statement,
-      $.regex_pattern_statement,
+      $.global_statement,
+      $.compilerset_statement,
       $.filter_command,
+      $.file_command,
       $.loadkeymap_command,
     ),
 
@@ -146,6 +153,7 @@ module.exports = grammar({
       seq(optional($._no_nl_statement), $._separator),
       $._nl_statement,
       $.set_statement,
+      $.range_statement,
     )),
 
     function_definition: $ => seq(
@@ -171,17 +179,18 @@ module.exports = grammar({
     // Call statements alone will necesitate a newline? (from what I can tell), but not in commands
     command: $ => seq(
       ':',
-      optional($.range_statement),
+      optional($.range_command),
       repeat(choice($.keycode, $.end_keycode)),
       choice(
-        $._bare_key,
+        $.bare_key,
         $.identifier,
         $.call_statement,
-        $._execute_statement,
-        $._set_statement,
+        alias($._execute_statement, $.execute_statement),
+        alias($._set_statement, $.set_statement),
         $.eval_statement,
         $.normal_statement,
         $.substitution_command,
+        $.if_statement,
         $.heredoc_statement,
         alias($._unknown_builtin_command, $.unknown_builtin_command),
         $.comment,
@@ -200,7 +209,7 @@ module.exports = grammar({
       '-',
     ),
 
-    builtin_command_statement: $ => seq($.builtin_command, $.statement),
+    // builtin_command_statement: $ => seq($.builtin_command, $.statement),
 
     filter_command: $ => seq(
       '%',
@@ -225,6 +234,18 @@ module.exports = grammar({
       repeat1($.keymap),
     )),
 
+    file_command: $ => seq(
+      choice('bwipe', 'cd', 'file', /run(time)?/, 'source'),
+      token.immediate(optional('!')),
+      repeat1($.filename),
+      $._separator,
+    ),
+
+    keeppatterns_command: _ => seq(
+      'keeppatterns',
+      /[^\r\n]*/,
+    ),
+
     keymap: $ => seq(
       field('left', choice($.token, $.keycode)),
       field('right', choice($.token, $.keycode)),
@@ -232,7 +253,7 @@ module.exports = grammar({
       $._separator,
     ),
 
-    // token: _ => /\S+/,
+    // token: _ => /\S+/,                          t
 
     // TODO(anyone reading this): toss this in the external scanner to have stateful tracking
     // of what the delimiter is, currently it just assumes it'll be /
@@ -261,17 +282,52 @@ module.exports = grammar({
 
     call_statement: $ => prec(1, seq('call', $.call_expression)),
 
-    eval_statement: $ => seq('=', $.expression),
+    eval_statement: $ => seq(choice('=', 'eval'), $.expression),
 
     execute_statement: $ => seq(/exe(c(ute)?)?/, repeat1($.expression), $._separator),
-    _execute_statement: $ => prec.right(alias(seq(/exe(c(ute)?)?/, repeat1($.expression)), $.execute_statement)),
+    _execute_statement: $ => prec.left(alias(
+      seq(/exe(c(ute)?)?/, repeat1($.expression)),
+      $.execute_statement,
+    )),
 
-    range_statement: $ => seq(
-      field('start', $._range_marker),
-      optional(seq(choice(',', ';'), field('end', $._range_marker))),
+    keepj_statement: $ => seq(
+      'keepj',
+      choice(
+        seq($._no_nl_statement, $._separator),
+        $._nl_statement,
+      ),
     ),
 
-    _range_marker: $ => choice(
+    range_statement: $ => prec.right(seq(
+      $.range_command,
+      optional($.call_statement),
+      // $._separator,
+    )),
+
+    range_command: $ => seq(
+      field('start', $._range_marker),
+      optional(seq(
+        choice(',', ';'),
+        field('end', $._range_marker),
+      )),
+    ),
+
+    highlight_statement: $ => seq(
+      choice('hi', 'highlight'),
+      token.immediate(optional('!')),
+      choice(
+        seq('link', $.hl_group, $.hl_group),
+        seq($.hl_group, repeat($.hl_attribute)),
+      ),
+      $._separator,
+    ),
+
+    hl_attribute: $ => seq(
+      $.identifier,
+      optional(seq('=', commaSep1(choice($.identifier, $.color, $.number)))),
+    ),
+
+    _range_marker: $ => prec.right(choice(
       $.number,
       '.',
       '+',
@@ -281,20 +337,24 @@ module.exports = grammar({
       '\\/',
       '\\?',
       '\\&',
-    ),
+    )),
 
     mark_statement: $ => seq(
       optional('.'),
       'mark',
-      $._bare_key,
+      $.bare_key,
     ),
 
     let_statement: $ => seq(
+      $._let_statement,
+      $._separator,
+    ),
+    _let_statement: $ => seq(
       'let',
       $.expression,
       choice('=', '+=', '-=', '*=', '/=', '%=', '.=', '..='),
       $.expression,
-      $._separator,
+      // $._separator,
     ),
 
     unlet_statement: $ => seq(
@@ -501,7 +561,7 @@ module.exports = grammar({
       token.immediate(optional('!')),
       repeat(choice('<buffer>', '<nowait>', '<silent>', '<unique>', '<script>')),
       $.map_definition,
-      $._separator,
+      $._newline,
     ),
     map_definition: $ => prec.right(1, choice(
       seq(
@@ -511,36 +571,32 @@ module.exports = grammar({
         field('right', $.expression),
       ),
       seq(
-        field('left', choice(seq($.key, token.immediate(/[a-zA-Z0-9]*/)), $.unique_identifier, $.plug_command, $._bare_key)),
+        field('left', choice(seq($.key, token.immediate(/[a-zA-Z0-9]*/)), $.unique_identifier, $.plug_command, $.bare_key)),
         field('right', choice(
-          seq(repeat($.key), optional(choice($.identifier, $.plug_command, $._bare_key))),
-          // FIXME: Improve this shitty mess
-          // repeat1(seq(
-          //   repeat($.key),
-          //   sep1($.statement, alias(/<[bB][aA][rR]>/, $.key)),
-          //   $.end_keycode,
-          //   optional($._bare_key),
-          //   optional($.macro),
-          // )),
           // seq(
           //   repeat($.key),
-          //   sep($.statement, alias(/<[bB][aA][rR]>/, $.key)),
-          //   $.end_keycode,
-          //   repeat1($.key),
-          //   optional($.macro),
+          //   optional(choice($.identifier, $.plug_command, $.bare_key)),
           // ),
           repeat1(choice(
             $.key,
             sep1(
-              // choice($.statement, $._execute_statement, $.eval_statement, $._set_statement),
-              choice($._no_nl_statement, $.embedded_statement),
-              alias(/<[bB][aA][rR]>/, $.key),
+              choice(
+                $._no_nl_statement,
+                $.embedded_statement,
+                $._call_expression,
+              ),
+              $._separator,
             ),
+            // $._no_nl_statement,
+            // $.embedded_statement,
+            // repeat1(
+            //   // choice($.statement, $._execute_statement, $.eval_statement, $._set_statement),
+            // ),
             $.macro,
             $.end_keycode,
-            $._bare_key,
+            $.bare_key,
             $._identifier,
-            alias($._call_expression, $.call_expression),
+            // alias($._call_expression, $.call_expression),
           )),
         )),
       ),
@@ -560,9 +616,10 @@ module.exports = grammar({
       '>>',
       '<<',
       '%',
+      '_', // discard register
       /[a-zA-Z0-9\[\]\{\}#-]\$?/,
       // (* <blah> <blah> <blah> *)
-      seq('(', repeat1(choice($.keycode, $._bare_key)), ')'),
+      seq('(', repeat1(choice($.keycode, $.bare_key)), ')'),
     )),
 
     keycode: $ => seq('<', sep1($.keycode_content, $.keycode_separator), '>'),
@@ -637,7 +694,7 @@ module.exports = grammar({
       $.string,
       // $.regex_pattern,
       // $.key,
-      $.builtin_command,
+      // $.builtin_command,
       $.end_keycode,
       '!',
     ),
@@ -749,6 +806,12 @@ module.exports = grammar({
       '}',
     )),
 
+    put_statement: $ => seq(
+      'put',
+      '=',
+      $.expression,
+    ),
+
     set_statement: $ => prec(-1, seq(
       $._set_statement,
       $._separator,
@@ -785,19 +848,35 @@ module.exports = grammar({
       $.default_option,
     ),
 
-    errorformat_statement: $ => seq(
-      'errorformat',
-      field('operator', token.immediate(choice('=', '+='))),
+    compilerset_statement: $ => seq(
+      'CompilerSet',
+      choice(
+        $.format_statement,
+        $.makeprg_statement,
+      ),
+    ),
+
+    format_statement: $ => seq(
+      choice('errorformat', 'efm'),
+      field('operator', choice('=', '+=', '^=', '&')),
       commaSep(choice(
         $.format_string,
         $.format_space,
       )),
+      $._separator,
+    ),
+
+    makeprg_statement: $ => seq(
+      'makeprg',
+      field('operator', choice('=', '+=', '&')),
+      repeat1(choice(/[^\\\r\n]+/, $._escape_sequence, '\\ ')),
+      $._separator,
     ),
 
     normal_statement: $ => seq(
       /norm(al)?/,
       token.immediate(optional('!')),
-      $._bare_key,
+      $.bare_key,
     ),
 
     silent_statement: $ => seq(
@@ -807,7 +886,10 @@ module.exports = grammar({
       choice(
         // seq($._no_nl_statement, $._separator),
         $._no_nl_statement,
-        $._unknown_builtin_command,
+        alias($._unknown_builtin_command, $.unknown_builtin_command),
+        alias($._execute_statement, $.execute_statement),
+        alias($._let_statement, $.let_statement),
+        $.expression_statement,
       ),
       // $._separator,
     ),
@@ -819,9 +901,9 @@ module.exports = grammar({
       alias(/[^\r\n]+/, $.identifier),
       optional(seq(
         repeat1($.autocmd_statement),
+        'augroup',
+        'END',
       )),
-      'augroup',
-      'END',
       $._separator,
     ),
 
@@ -949,15 +1031,53 @@ module.exports = grammar({
       // $.identifier,
       // token.immediate(optional('!')),
       // choice(repeat($.command_argument), $.if_statement),
-      $._unknown_builtin_command,
-      $._separator, // FIXME: ~+150 state count w/ prec.right
+      choice(
+        seq($._unknown_builtin_command, $._separator),
+        seq($.identifier, token.immediate(optional('!')), $.format_statement),
+      ),
     ),
 
     _unknown_builtin_command: $ => prec.right(seq(
       $.identifier,
       token.immediate(optional('!')),
-      choice(repeat($.command_argument), $.if_statement),
+      choice(repeat($.command_argument), $.if_statement, $.normal_statement),
+      // repeat(choice($.command_argument, $.if_statement, $.normal_statement)),
     )),
+
+    command_argument: $ => choice(
+      $.string,
+      alias(/"[^\r\n]+/, $.comment),
+      // /[^%\s][^\s]+/,
+      // $.format_string,
+      // $.format_space,
+      $.number,
+      $._identifier,
+      $.option,
+      $.substitution_command,
+      $.register,
+      '!',
+      $.key,
+      /\d+\w+/,
+      // $.register,
+      '=',
+      // '%',
+      '$',
+      '*',
+      '+',
+      '\\ ',
+      '.',
+      $.simple_command,
+      // seq(commaSep1($.format_string), optional(',')),
+    ),
+
+    simple_command: $ => seq(
+      ':',
+      optional($.range_command),
+      repeat(choice($.keycode, $.end_keycode)),
+      choice(
+        $.call_statement,
+      ),
+    ),
 
     // unknown_builtin_statement: $ => (seq(
     //   $.identifier,
@@ -1007,17 +1127,6 @@ module.exports = grammar({
       ),
     )),
 
-    command_argument: $ => prec.right(choice(
-      $.string,
-      alias(/"[^\r\n]+/, $.comment),
-      /[^%\s][^\s]+/,
-      // $.format_string,
-      // $.format_space,
-      $._identifier,
-      $.option,
-      // seq(commaSep1($.format_string), optional(',')),
-    )),
-
     number: _ => /\d+/,
 
     relative_number: _ => /\.[+-]?\d+/,
@@ -1031,6 +1140,10 @@ module.exports = grammar({
       $.scoped_identifier,
       $.indirect_reference_identifier,
     ),
+
+    hl_group: _ => /[a-zA-Z0-9_@.]+/,
+
+    color: _ => /#[0-9a-fA-F]{6}/,
 
     identifier: _ => /[a-zA-Z_][a-zA-Z0-9_]*/,
 
@@ -1090,7 +1203,7 @@ module.exports = grammar({
 
     option: $ => seq('&', optional($.scope), $.option_identifier),
 
-    option_identifier: _ => choice(/[a-z]+/, seq('t_', /[a-zA-Z0-9]+/)),
+    option_identifier: _ => choice(/[a-zA-Z]+/, seq('t_', /[a-zA-Z0-9]+/)),
 
     scope: _ => token(seq(choice('b', 'g', 'l', 's', 't', 'v', 'w', '<'), ':')),
 
@@ -1102,25 +1215,67 @@ module.exports = grammar({
     register: _ => token(choice(/@["0-9a-zA-Z:.%#=*\+_/-@]/, '_')),
 
     // TODO: EXTERNAL SCANNER
-    _bare_key: $ => alias(
-      choice(
-        token(/[a-zA-Z0-9\[\]\{\}\-\$%*^+`'/?_,\x01\x08][a-zA-Z0-9\[\]\{\}\-%\$/*^+`'"/?_,\x1b]*/),
-        token(/[a-zA-Z0-9\[\]\{\}\-\$%*^+`'"/?_,\x01\x08][a-zA-Z0-9\[\]\{\}\-%\$/*^+`'"/?_,\x1b]+/),
-        token(prec(-1, /[a-zA-Z0-9\[\]\{\}\-%\$*^+`'/?_,=\x01\x08][a-zA-Z0-9\[\]\{\}\-%\$/*^+`'"/?_,=<>\x1b]*/)),
-        token(prec(-1, /[a-zA-Z0-9\[\]\{\}\-%\$*^+`'"/?_,=\x01\x08][a-zA-Z0-9\[\]\{\}\-%\$/*^+`'"/?_,=<>\x1b]+/)),
-      ),
-      $.bare_key,
+    bare_key: _ => choice(
+      // token(/[a-zA-Z0-9\[\]\{\}\-\$%*^+`'/?_,\x01\x08][a-zA-Z0-9\[\]\{\}\-%\$/*^+`'"/?_,\x1b]*/),
+      token(/[a-zA-Z0-9\[\]\{\}\-\$%*^+`'"/?_,\x01\x08][a-zA-Z0-9\[\]\{\}\-%\$/*^+`'"/?_,\x1b]+/),
+      token(prec(-1, /[a-zA-Z0-9\[\]\{\}\-%\$*^+`'/?_,=\x01\x08][a-zA-Z0-9\[\]\{\}\-%\$/*^+`'"/?_,=<>\x1b]*/)),
+      token(prec(-1, /[a-zA-Z0-9\[\]\{\}\-%\$*^+`'"/?_,=\x01\x08][a-zA-Z0-9\[\]\{\}\-%\$/*^+`'"/?_,=<>\x1b]+/)),
     ),
 
-    regex_pattern_statement: $ => seq(
-      choice('/', '?'),
-      /[^\r\n]+/,
-      $._separator,
+    pattern: $ => prec.left(sep1($.pattern_branch, '\\|')),
+
+    pattern_branch: $ => sep1(repeat1($._pattern_piece), '\\&'),
+
+    _pattern_piece: $ => seq($._pattern_atom, optional($.pattern_multi)),
+
+    pattern_multi: _ => choice(
+      '*',
+      /\\[+=?]/,
+      /\\@[!>=]|<[=!]/,
+      /\\\{-?[0-9]*,?[0-9]*}/,
     ),
+
+    _pattern_atom: $ =>
+      prec.left(
+        choice(
+          $._ordinary_atom,
+          seq('\\(', $.pattern, '\\)'),
+          seq('\\%(', $.pattern, '\\)'),
+          seq('\\z(', $.pattern, '\\)'),
+        ),
+      ),
+
+    _ordinary_atom: _ => repeat1(
+      choice(
+        seq(
+          '[',
+          repeat(
+            choice(
+              seq('\\', /./), // escaped character
+              /[^\]\n\\]/, // any character besides ']', '\' or '\n'
+            ),
+          ),
+          ']',
+        ), // square-bracket-delimited character class
+        seq('\\', /./), // escaped character
+        /[^\\\[\n]/, // any character besides '[', '\' or '\n'
+      ),
+    ),
+
+    global_statement: $ => prec.right(seq(
+      // /g(lobal)?/,
+      'g',
+      '/',
+      $.pattern,
+      '/',
+      // $.statement,
+      choice(
+        seq($._no_nl_statement, $._separator),
+        $._nl_statement,
+      ),
+    )),
 
     env_variable: _ => /\$[a-zA-Z_][a-zA-Z0-9_]*/,
-
-    hl_group: _ => /[a-zA-Z0-9_@.]+/,
 
     filename: _ => token(prec(-1, seq(
       // First character of a filename is not immediate
@@ -1193,8 +1348,8 @@ function sep(rule, separator) {
 /**
 * Creates a rule to match one or more of the rules separated by the separator
 *
-* @param {Rule} rule
-* @param {string|Rule} separator - The separator to use.
+* @param {Rule|RegExp} rule
+* @param {string|RegExp|Rule} separator - The separator to use.
 *
 * @return {SeqRule}
 *

@@ -7,12 +7,15 @@
 enum TokenType {
     LINE_CONTINUATION,
     SEPARATOR,
+    NEWLINE, // only in map statements
     KEYCODE_CONTENT,
     KEYCODE_SEPARATOR,
     END_KEYCODE,
     FORMAT_BLOB,
     FORMAT_SPACE,
     TOKEN,
+    PATTERN_SEPARATOR_FIRST,
+    PATTERN_SEPARATOR,
     /* STARTING_PERIOD, */
     /* HEREDOC_LANGUAGE, */
     HEREDOC_START,
@@ -28,6 +31,7 @@ typedef struct {
     char *HEREDOC_START;
     int   HEREDOC_START_LENGTH;
     char  SUBSTITUTION_DELIMITER;
+    char  PATTERN_SEPARATOR;
 } Scanner;
 
 static void advance(TSLexer *lexer) { lexer->advance(lexer, false); }
@@ -155,23 +159,23 @@ bool scan_keycode_content(Scanner *scanner, TSLexer *lexer) {
 }
 
 /* // just <[cC][rR]> */
-bool scan_end_keycode(Scanner *scanner, TSLexer *lexer) {
-    if (lexer->lookahead == '<') {
-        lexer->result_symbol = END_KEYCODE;
-        advance(lexer);
-        if (lexer->lookahead == 'c' || lexer->lookahead == 'C') {
-            advance(lexer);
-            if (lexer->lookahead == 'r' || lexer->lookahead == 'R') {
-                advance(lexer);
-                if (lexer->lookahead == '>') {
-                    advance(lexer);
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
-}
+/* bool scan_end_keycode(Scanner *scanner, TSLexer *lexer) { */
+/*     if (lexer->lookahead == '<') { */
+/*         lexer->result_symbol = END_KEYCODE; */
+/*         advance(lexer); */
+/*         if (lexer->lookahead == 'c' || lexer->lookahead == 'C') { */
+/*             advance(lexer); */
+/*             if (lexer->lookahead == 'r' || lexer->lookahead == 'R') { */
+/*                 advance(lexer); */
+/*                 if (lexer->lookahead == '>') { */
+/*                     advance(lexer); */
+/*                     return true; */
+/*                 } */
+/*             } */
+/*         } */
+/*     } */
+/*     return false; */
+/* } */
 
 bool scan_oneliner_heredoc_content(Scanner *scanner, TSLexer *lexer) {
     while (iswspace(lexer->lookahead))
@@ -264,11 +268,19 @@ bool tree_sitter_vim_external_scanner_scan(void *payload, TSLexer *lexer,
     /*     advance(lexer); */
     /* } */
 
+    printf("c0: %c\n", lexer->lookahead);
     if (valid_symbols[SEPARATOR] && valid_symbols[LINE_CONTINUATION]) {
         while (iswspace(lexer->lookahead) && lexer->lookahead != '\n')
             skip(lexer);
 
         if (lexer->lookahead == '|' || lexer->lookahead == '\n') {
+            if (valid_symbols[NEWLINE] &&
+                lexer->lookahead == '\n') { // hijack for map statements
+                lexer->result_symbol = NEWLINE;
+                advance(lexer);
+                return true;
+            }
+            printf("c: %c\n", lexer->lookahead);
             advance(lexer);
 
             while (iswspace(
@@ -304,7 +316,73 @@ bool tree_sitter_vim_external_scanner_scan(void *payload, TSLexer *lexer,
                 lexer->result_symbol = SEPARATOR;
                 return true;
             }
+        } else if (lexer->lookahead == '<' && valid_symbols[SEPARATOR]) {
+            /* lexer->mark_end(lexer); */
+            advance(lexer);
+            // check for <[bB][aA][rR]>
+            if (lexer->lookahead == 'b' || lexer->lookahead == 'B') {
+                advance(lexer);
+                if (lexer->lookahead == 'a' || lexer->lookahead == 'A') {
+                    advance(lexer);
+                    if (lexer->lookahead == 'r' || lexer->lookahead == 'R') {
+                        advance(lexer);
+                        if (lexer->lookahead == '>') {
+                            advance(lexer);
+                            lexer->result_symbol = SEPARATOR;
+                            lexer->mark_end(lexer);
+                            return true;
+                        }
+                    }
+                }
+            } else if (valid_symbols[END_KEYCODE] && lexer->lookahead == 'C' ||
+                       lexer->lookahead == 'c') { // need to check for
+                                                  // END_KEYCODE here too
+                advance(lexer);
+                if (lexer->lookahead == 'R' || lexer->lookahead == 'r') {
+                    advance(lexer);
+                    if (lexer->lookahead == '>') {
+                        advance(lexer);
+                        lexer->result_symbol = END_KEYCODE;
+                        lexer->mark_end(lexer);
+                        return true;
+                    }
+                }
+            }
+            return false; // failed to match <bar>
         }
+    }
+
+    if (valid_symbols[KEYCODE_CONTENT])
+        return scan_keycode_content(scanner, lexer);
+
+    if (valid_symbols[KEYCODE_SEPARATOR]) {
+        if (lexer->lookahead == '-') {
+            lexer->result_symbol = KEYCODE_SEPARATOR;
+            advance(lexer);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    if (valid_symbols[END_KEYCODE]) {
+        while (iswspace(lexer->lookahead) && lexer->lookahead != '\n')
+            skip(lexer);
+        if (lexer->lookahead == '<') {
+            lexer->result_symbol = END_KEYCODE;
+            advance(lexer);
+            if (lexer->lookahead == 'c' || lexer->lookahead == 'C') {
+                advance(lexer);
+                if (lexer->lookahead == 'r' || lexer->lookahead == 'R') {
+                    advance(lexer);
+                    if (lexer->lookahead == '>') {
+                        advance(lexer);
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     if (valid_symbols[TOKEN]) {
@@ -331,25 +409,6 @@ bool tree_sitter_vim_external_scanner_scan(void *payload, TSLexer *lexer,
             return true;
         }
         return false;
-    }
-
-    if (valid_symbols[KEYCODE_CONTENT])
-        return scan_keycode_content(scanner, lexer);
-
-    if (valid_symbols[KEYCODE_SEPARATOR]) {
-        if (lexer->lookahead == '-') {
-            lexer->result_symbol = KEYCODE_SEPARATOR;
-            advance(lexer);
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    if (valid_symbols[END_KEYCODE]) {
-        while (iswspace(lexer->lookahead) && lexer->lookahead != '\n')
-            skip(lexer);
-        return scan_end_keycode(scanner, lexer);
     }
 
     if (valid_symbols[FORMAT_BLOB]) {
@@ -383,6 +442,23 @@ bool tree_sitter_vim_external_scanner_scan(void *payload, TSLexer *lexer,
                 return true;
             }
         }
+    }
+
+    // Not sure about the punctuation here...
+    if (valid_symbols[PATTERN_SEPARATOR_FIRST] && !iswspace(lexer->lookahead)) {
+        lexer->result_symbol = PATTERN_SEPARATOR_FIRST;
+        scanner->PATTERN_SEPARATOR = lexer->lookahead;
+        printf("PATTERN_SEPARATOR: %c\n", scanner->PATTERN_SEPARATOR);
+        advance(lexer);
+        return true;
+    } else if (valid_symbols[PATTERN_SEPARATOR] &&
+               lexer->lookahead == scanner->PATTERN_SEPARATOR) {
+        // No need to check for s->separator == 0 above because we know
+        // lexer->lookahead is != 0
+        printf("PATTERN_SEPARATOR: %c\n", scanner->PATTERN_SEPARATOR);
+        lexer->result_symbol = PATTERN_SEPARATOR;
+        advance(lexer);
+        return true;
     }
 
     /* if (valid_symbols[STARTING_PERIOD]) { */
